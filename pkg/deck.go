@@ -1,4 +1,4 @@
-package deckOfCards
+package pkg
 
 import (
 	"math/rand"
@@ -7,22 +7,22 @@ import (
 
 const TotalCards = 52
 
-type Suit int
+type Suit string
 
 const (
-	DIAMONDS Suit = iota
-	CLUBS
-	SPADES
-	HEARTS
+	DIAMONDS Suit = "DIAMONDS"
+	CLUBS = "CLUBS"
+	SPADES = "SPADES"
+	HEARTS = "HEARTS"
 )
 
-type DeckOfCards struct {
+type CardDeck struct {
 	cards []Card
 	currentCard int
 }
 
-func NewDeckOfCards() DeckOfCards {
-	d := DeckOfCards{
+func NewDeckOfCards() CardDeck {
+	d := CardDeck{
 		cards: make([]Card, TotalCards),
 	}
 	suits := []Suit{DIAMONDS, CLUBS, SPADES, HEARTS}
@@ -36,24 +36,24 @@ func NewDeckOfCards() DeckOfCards {
 	return d
 }
 
-func (d *DeckOfCards) swap(pos1 int, pos2 int) {
+func (d *CardDeck) swap(pos1 int, pos2 int) {
 	hold := d.cards[pos1]
 	d.cards[pos1] = d.cards[pos2]
 	d.cards[pos2] = hold
 }
 
 // Shuffle swaps the card at each position in the deck with a random card from the remaining positions.
-func (d *DeckOfCards) Shuffle() {
+func (d *CardDeck) Shuffle() {
 	rand.Seed(time.Now().UnixNano())
 	for i := 0; i < TotalCards; i++ {
-		rando := rand.Intn(TotalCards - i) + i
+		rando := rand.Intn(TotalCards- i) + i
 		d.swap(i, rando)
 	}
 }
 
 // Deal returns the card at the index currentCard for the given deck.
 // Nil is returned if the currentCard is greater than TotalCards signifying an empty deck
-func (d *DeckOfCards) Deal() *Card {
+func (d *CardDeck) Deal() *Card {
 	var c *Card
 	if d.currentCard < TotalCards {
 		c = &d.cards[d.currentCard]
