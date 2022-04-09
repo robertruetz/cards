@@ -47,6 +47,21 @@ func NewCardDeck() CardDeck {
 	return d
 }
 
+func (d *CardDeck) DeepCopy() CardDeck {
+	if d.cards == nil {
+		return CardDeck{cards: []Card(nil)}
+	}
+	cd := CardDeck{
+		cards: make([]Card, len(d.cards)),
+		currentCard: d.currentCard,
+	}
+	for ix, c := range d.cards {
+		cd.cards[ix] = NewCard(c.Suit, c.Rank)
+		cd.cards[ix].FaceUp = c.FaceUp
+	}
+	return cd
+}
+
 // swap replaces the value at pos1 with the value at pos2 and vice versa.
 func (d *CardDeck) swap(pos1 int, pos2 int) {
 	hold := d.cards[pos1]
@@ -56,12 +71,16 @@ func (d *CardDeck) swap(pos1 int, pos2 int) {
 
 // Shuffle swaps the card at each position in the deck with a random card from the remaining possible positions.
 // Simulates shuffling a deck of cards
-func (d *CardDeck) Shuffle() {
+func (d *CardDeck) Shuffle() error {
+	if d.cards == nil || len(d.cards) == 0 {
+		return fmt.Errorf("card deck was empty")
+	}
 	rand.Seed(time.Now().UnixNano())
 	for i := 0; i < TotalCards; i++ {
 		rando := rand.Intn(TotalCards- i) + i
 		d.swap(i, rando)
 	}
+	return nil
 }
 
 // Deal returns the card at the index currentCard for the given deck.
