@@ -39,7 +39,8 @@ func NewCardDeck() CardDeck {
 	dIx := 0
 	for _, s := range suits {
 		for i := 1; i <= 13; i++ {
-			d.cards[dIx] = NewCard(s, i)
+			var rank Rank = GetRank(i)
+			d.cards[dIx] = NewCard(s, rank)
 			dIx++
 		}
 	}
@@ -77,15 +78,24 @@ func (d *CardDeck) Deal(faceUp bool) *Card {
 
 type Card struct {
 	Suit Suit
-	Rank int
+	Rank Rank
 	FaceUp bool
 }
 
 func (c Card) String() string {
-	return fmt.Sprintf("%v of %c", c.rankSwap(), symbols[string(c.Suit)])
+	return fmt.Sprintf("%s of %c", c.Rank.String(), symbols[string(c.Suit)])
 }
 
-func NewCard(suit Suit, rank int) Card {
+// IsTenCard returns true if the card is 10, Jack, Queen, or King.
+func (c *Card) IsTenCard() bool {
+	return c.Rank.Value == 10
+}
+
+func (c *Card) IsAce() bool {
+	return c.Rank.Name == "Ace"
+}
+
+func NewCard(suit Suit, rank Rank) Card {
 	return Card{
 		Suit: suit,
 		Rank: rank,
@@ -93,10 +103,34 @@ func NewCard(suit Suit, rank int) Card {
 	}
 }
 
+type Rank struct {
+	Name string
+	Value int
+	AltValue int
+}
+
+func GetRank(value int) Rank{
+	r := Rank{
+		Name: rankSwap(value),
+		Value: value,
+	}
+	if value >= 10 {
+		r.Value = 10
+	}
+	if value == 1 {
+		r.AltValue = 11
+	}
+	return r
+}
+
+func (r *Rank) String() string {
+	return r.Name
+}
+
 // rankSwap swaps out the Rank of the given card for the appropriate string value.
 // Handles Ace, Jack, Queen, King
-func (c Card) rankSwap() string {
-	switch c.Rank {
+func rankSwap(value int) string {
+	switch value {
 	case 1:
 		return "Ace"
 	case 11:
@@ -106,7 +140,7 @@ func (c Card) rankSwap() string {
 	case 13:
 		return "King"
 	default:
-		return strconv.Itoa(c.Rank)
+		return strconv.Itoa(value)
 	}
 }
 
