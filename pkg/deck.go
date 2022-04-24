@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-const TotalCards = 52
+const StandardDeckSize = 52
 
 type Suit string
 
@@ -33,7 +33,7 @@ type CardDeck struct {
 // NewCardDeck returns an ordered deck of playing cards.
 func NewCardDeck() CardDeck {
 	d := CardDeck{
-		cards: make([]Card, TotalCards),
+		cards: make([]Card, StandardDeckSize),
 	}
 	suits := []Suit{DIAMONDS, CLUBS, SPADES, HEARTS}
 	dIx := 0
@@ -47,12 +47,20 @@ func NewCardDeck() CardDeck {
 	return d
 }
 
+func (d *CardDeck) Length() int {
+	return len(d.cards)
+}
+
+func (d *CardDeck) Combine(other *CardDeck) {
+	d.cards = append(d.cards, other.cards...)
+}
+
 func (d *CardDeck) DeepCopy() CardDeck {
 	if d.cards == nil {
 		return CardDeck{cards: []Card(nil)}
 	}
 	cd := CardDeck{
-		cards: make([]Card, len(d.cards)),
+		cards: make([]Card, d.Length()),
 		currentCard: d.currentCard,
 	}
 	for ix, c := range d.cards {
@@ -72,22 +80,22 @@ func (d *CardDeck) swap(pos1 int, pos2 int) {
 // Shuffle swaps the card at each position in the deck with a random card from the remaining possible positions.
 // Simulates shuffling a deck of cards
 func (d *CardDeck) Shuffle() error {
-	if d.cards == nil || len(d.cards) == 0 {
+	if d.cards == nil || d.Length() == 0 {
 		return fmt.Errorf("card deck was empty")
 	}
 	rand.Seed(time.Now().UnixNano())
-	for i := 0; i < TotalCards; i++ {
-		rando := rand.Intn(TotalCards- i) + i
+	for i := 0; i < d.Length(); i++ {
+		rando := rand.Intn(d.Length()- i) + i
 		d.swap(i, rando)
 	}
 	return nil
 }
 
 // Deal returns the card at the index currentCard for the given deck.
-// Nil is returned if the currentCard is greater than TotalCards signifying an empty deck
+// Nil is returned if the currentCard is greater than StandardDeckSize signifying an empty deck
 func (d *CardDeck) Deal(faceUp bool) *Card {
 	var c *Card
-	if d.currentCard < TotalCards {
+	if d.currentCard < d.Length() {
 		c = &d.cards[d.currentCard]
 		c.FaceUp = faceUp
 		d.currentCard++
@@ -162,5 +170,3 @@ func rankSwap(value int) string {
 		return strconv.Itoa(value)
 	}
 }
-
-// TODO: Implement a ShoeOfCards -- n number of decks all shuffled together that can be reshuffled at a given interval

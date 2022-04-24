@@ -3,6 +3,7 @@ package blackjack
 import (
 	"fmt"
 	"github.com/robertruetz/deckOfCards/blackjack/models"
+	"github.com/robertruetz/deckOfCards/blackjack/ui"
 	cards "github.com/robertruetz/deckOfCards/pkg"
 	"log"
 	"os"
@@ -31,22 +32,37 @@ func (p *Player) DealCard(card cards.Card) {
 }
 
 func Play(){
-	deck := cards.NewCardDeck()
-	deck.Shuffle()
-	p1 := NewPlayer(models.NewHand(*deck.Deal(false), *deck.Deal(true)), "player")
-	dealer := NewPlayer(models.NewHand(*deck.Deal(false), *deck.Deal(true)), "dealer")
-    printHands(p1.Hand, dealer.Hand)
-	dealerHasBlackJack := false
-	if dealer.Hand.IsBlackjack() {
-		dealerHasBlackJack = true
-		dealer.Hand.FlipDownCard()
+	gui := ui.NewUi(os.Stdout)
+	gui.PrintBanner()
+	pCnt, pCntErr := gui.GetPlayerCount()
+	if pCntErr != nil {
+		panic (pCntErr)
+	} else if pCnt == 0 {
+		panic("player count was zero")
 	}
+	shoe := cards.NewShoe(6)
+	sErr := shoe.Shuffle()
+	if sErr != nil {
+		logger.Printf("error shuffling deck: %s", sErr.Error())
+	}
+	game := NewGame(&gui, &shoe.Deck, pCnt)
+
+	dealerHasBlackJack := false
+	if game.dealer.Hand.IsBlackjack() {
+		dealerHasBlackJack = true
+		game.dealer.Hand.FlipDownCard()
+	}
+
+	game.PrintHands()
 	// handle player using dealer strategy
-	s := NewDealerStrategy(&deck, p1, logger)
-	s.Employ()
+	for _, p := range game.players {
+		s := NewDealerStrategy(game.deck, p, logger)
+		s.Employ()
+		game.ui.HorizontalLine()
+	}
 	if !dealerHasBlackJack {
 		// handle dealer using dealer strategy
-		d := NewDealerStrategy(&deck, dealer, logger)
+		d := NewDealerStrategy(game.deck, game.dealer, logger)
 		d.Employ()
 	}
 }
