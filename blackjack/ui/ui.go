@@ -2,6 +2,7 @@ package ui
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -27,20 +28,24 @@ func NewUi(w *os.File) Ui{
 }
 
 func (ui *Ui) PrintBanner() {
-	ui.writeLn(Banner)
+	ui.WriteLn(Banner)
 }
 
-func (ui *Ui) writeLn(msg string) {
+func (ui *Ui) WriteLn(msg string) {
 	_, _ = ui.writer.WriteString(msg + "\n")
 }
 
-func (ui *Ui) write(msg string) {
+func (ui *Ui) Write(msg string) {
 	_, _ = ui.writer.WriteString(msg)
 }
 
-func (ui *Ui) readLn(prompt string) (string, error) {
+func (ui *Ui) Writef(msg string, a ...interface{}) {
+	ui.Write(fmt.Sprintf(msg, a...))
+}
+
+func (ui *Ui) ReadLn(prompt string) (string, error) {
 	rdr := bufio.NewReader(os.Stdin)
-	ui.write(prompt)
+	ui.Write(prompt)
 	s, err := rdr.ReadString('\n')
 	if err != nil {
 		return "", nil
@@ -51,7 +56,7 @@ func (ui *Ui) readLn(prompt string) (string, error) {
 
 func (ui *Ui) GetPlayerCount() (int, error) {
 	var result int
-	pCStr, err := ui.readLn("Enter number of players: ")
+	pCStr, err := ui.ReadLn("Enter number of players: ")
 	if err != nil {
 		return result, err
 	}
@@ -59,5 +64,12 @@ func (ui *Ui) GetPlayerCount() (int, error) {
 }
 
 func (ui *Ui) HorizontalLine() {
-	ui.writeLn(RuleHoriz)
+	ui.WriteLn(RuleHoriz)
+}
+
+func (ui *Ui) GetMenuSelection(opts []string) (string, error){
+	for ix, o := range opts {
+		ui.Writef("%s %v\n", o, ix)
+	}
+	return ui.ReadLn("Enter a selection: ")
 }
