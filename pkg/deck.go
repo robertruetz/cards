@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-const TotalCards = 52
+const StandardDeckSize = 52
 
 type Suit string
 
@@ -33,17 +33,41 @@ type CardDeck struct {
 // NewCardDeck returns an ordered deck of playing cards.
 func NewCardDeck() CardDeck {
 	d := CardDeck{
-		cards: make([]Card, TotalCards),
+		cards: make([]Card, StandardDeckSize),
 	}
 	suits := []Suit{DIAMONDS, CLUBS, SPADES, HEARTS}
 	dIx := 0
 	for _, s := range suits {
 		for i := 1; i <= 13; i++ {
-			d.cards[dIx] = NewCard(s, i)
+			var rank Rank = GetRank(i)
+			d.cards[dIx] = NewCard(s, rank)
 			dIx++
 		}
 	}
 	return d
+}
+
+func (d *CardDeck) Length() int {
+	return len(d.cards)
+}
+
+func (d *CardDeck) Combine(other *CardDeck) {
+	d.cards = append(d.cards, other.cards...)
+}
+
+func (d *CardDeck) DeepCopy() CardDeck {
+	if d.cards == nil {
+		return CardDeck{cards: []Card(nil)}
+	}
+	cd := CardDeck{
+		cards: make([]Card, d.Length()),
+		currentCard: d.currentCard,
+	}
+	for ix, c := range d.cards {
+		cd.cards[ix] = NewCard(c.Suit, c.Rank)
+		cd.cards[ix].FaceUp = c.FaceUp
+	}
+	return cd
 }
 
 // swap replaces the value at pos1 with the value at pos2 and vice versa.
@@ -55,19 +79,23 @@ func (d *CardDeck) swap(pos1 int, pos2 int) {
 
 // Shuffle swaps the card at each position in the deck with a random card from the remaining possible positions.
 // Simulates shuffling a deck of cards
-func (d *CardDeck) Shuffle() {
+func (d *CardDeck) Shuffle() error {
+	if d.cards == nil || d.Length() == 0 {
+		return fmt.Errorf("card deck was empty")
+	}
 	rand.Seed(time.Now().UnixNano())
-	for i := 0; i < TotalCards; i++ {
-		rando := rand.Intn(TotalCards- i) + i
+	for i := 0; i < d.Length(); i++ {
+		rando := rand.Intn(d.Length()- i) + i
 		d.swap(i, rando)
 	}
+	return nil
 }
 
 // Deal returns the card at the index currentCard for the given deck.
-// Nil is returned if the currentCard is greater than TotalCards signifying an empty deck
+// Nil is returned if the currentCard is greater than StandardDeckSize signifying an empty deck
 func (d *CardDeck) Deal(faceUp bool) *Card {
 	var c *Card
-	if d.currentCard < TotalCards {
+	if d.currentCard < d.Length() {
 		c = &d.cards[d.currentCard]
 		c.FaceUp = faceUp
 		d.currentCard++
@@ -77,15 +105,24 @@ func (d *CardDeck) Deal(faceUp bool) *Card {
 
 type Card struct {
 	Suit Suit
-	Rank int
+	Rank Rank
 	FaceUp bool
 }
 
 func (c Card) String() string {
-	return fmt.Sprintf("%v of %c", c.rankSwap(), symbols[string(c.Suit)])
+	return fmt.Sprintf("%s of %c", c.Rank.String(), symbols[string(c.Suit)])
 }
 
-func NewCard(suit Suit, rank int) Card {
+// IsTenCard returns true if the card is 10, Jack, Queen, or King.
+func (c *Card) IsTenCard() bool {
+	return c.Rank.Value == 10
+}
+
+func (c *Card) IsAce() bool {
+	return c.Rank.Name == "Ace"
+}
+
+func NewCard(suit Suit, rank Rank) Card {
 	return Card{
 		Suit: suit,
 		Rank: rank,
@@ -93,10 +130,34 @@ func NewCard(suit Suit, rank int) Card {
 	}
 }
 
+type Rank struct {
+	Name string
+	Value int
+	AltValue int
+}
+
+func GetRank(value int) Rank{
+	r := Rank{
+		Name: rankSwap(value),
+		Value: value,
+	}
+	if value >= 10 {
+		r.Value = 10
+	}
+	if value == 1 {
+		r.AltValue = 11
+	}
+	return r
+}
+
+func (r *Rank) String() string {
+	return r.Name
+}
+
 // rankSwap swaps out the Rank of the given card for the appropriate string value.
 // Handles Ace, Jack, Queen, King
-func (c Card) rankSwap() string {
-	switch c.Rank {
+func rankSwap(value int) string {
+	switch value {
 	case 1:
 		return "Ace"
 	case 11:
@@ -106,8 +167,6 @@ func (c Card) rankSwap() string {
 	case 13:
 		return "King"
 	default:
-		return strconv.Itoa(c.Rank)
+		return strconv.Itoa(value)
 	}
 }
-
-// TODO: Implement a ShoeOfCards -- n number of decks all shuffled together that can be reshuffled at a given interval
